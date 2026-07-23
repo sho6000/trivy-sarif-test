@@ -1,0 +1,39 @@
+name: Build and Push Test Service Image
+
+permissions:
+  contents: read
+
+on:
+  push:
+    tags:
+      - '*'
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    outputs:
+      image: ${{ steps.push.outputs.image }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # No real build/push here — using a public image directly to isolate
+      # the SARIF-upload-to-Code-Scanning behavior from the fork/registry setup.
+      - name: "Set image reference"
+        id: push
+        run: |
+          echo "image=alpine:3.18" >> $GITHUB_OUTPUT
+          echo "Using test image: alpine:3.18"
+
+  cve-scan:
+    needs: build-and-push
+    if: needs.build-and-push.outputs.image != ''
+    permissions:
+      contents: read
+      packages: read
+      security-events: write
+      actions: read
+    uses: ./.github/workflows/cve-check.yml
+    with:
+      image: ${{ needs.build-and-push.outputs.image }}
