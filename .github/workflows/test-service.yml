@@ -2,6 +2,7 @@ name: Build and Push Test Service Image
 
 permissions:
   contents: read
+  packages: write
 
 on:
   push:
@@ -18,13 +19,24 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # No real build/push here — using a public image directly to isolate
-      # the SARIF-upload-to-Code-Scanning behavior from the fork/registry setup.
-      - name: "Set image reference"
+      - name: Log in to GHCR
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+      - name: Build Docker image
+        run: |
+          IMAGE_NAME="trivy-sarif-test-app"
+          IMAGE_TAG=$(echo "${{ github.ref_name }}" | tr '[:upper:]' '[:lower:]')
+          docker build -t ghcr.io/${{ github.repository_owner }}/${IMAGE_NAME}:${IMAGE_TAG} .
+
+          echo "IMAGE_NAME=${IMAGE_NAME}" >> $GITHUB_ENV
+          echo "IMAGE_TAG=${IMAGE_TAG}" >> $GITHUB_ENV
+
+      - name: Push Docker image
         id: push
         run: |
-          echo "image=alpine:3.18" >> $GITHUB_OUTPUT
-          echo "Using test image: alpine:3.18"
+          docker push ghcr.io/${{ github.repository_owner }}/${IMAGE_NAME}:${IMAGE_TAG}
+          echo "Pushed Docker image: ghcr.io/${{ github.repository_owner }}/${IMAGE_NAME}:${IMAGE_TAG}"
+          echo "image=ghcr.io/${{ github.repository_owner }}/${IMAGE_NAME}:${IMAGE_TAG}" >> $GITHUB_OUTPUT
 
   cve-scan:
     needs: build-and-push
