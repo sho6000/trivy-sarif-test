@@ -1,41 +1,41 @@
-name: Test Trivy SARIF Upload
+# name: Test Trivy SARIF Upload
 
-on:
-  push:
-    branches:
-      - main
+# on:
+#   push:
+#     branches:
+#       - main
 
-permissions:
-  contents: read
-  security-events: write
-  actions: read
+# permissions:
+#   contents: read
+#   security-events: write
+#   actions: read
 
-jobs:
-  scan:
-    name: Trivy Scan
-    runs-on: ubuntu-latest
+# jobs:
+#   scan:
+#     name: Trivy Scan
+#     runs-on: ubuntu-latest
 
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+#     steps:
+#       - name: Checkout code
+#         uses: actions/checkout@v4
 
-      - name: Build vulnerable test image
-        run: docker build -t test-trivy-app:local .
+#       - name: Build vulnerable test image
+#         run: docker build -t test-trivy-app:local .
 
-      - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@7b7aa264d83dc58691451798b4d117d53d21edfe
-        with:
-          image-ref: 'test-trivy-app:local'
-          format: 'sarif'
-          output: 'trivy-results.sarif'
-          severity: MEDIUM,HIGH,CRITICAL
+#       - name: Run Trivy vulnerability scanner
+#         uses: aquasecurity/trivy-action@7b7aa264d83dc58691451798b4d117d53d21edfe
+#         with:
+#           image-ref: 'test-trivy-app:local'
+#           format: 'sarif'
+#           output: 'trivy-results.sarif'
+#           severity: MEDIUM,HIGH,CRITICAL
 
-      - name: Print vulnerability count
-        run: |
-          echo "Total results in SARIF:"
-          python3 -c "import json; d=json.load(open('trivy-results.sarif')); print(len(d['runs'][0].get('results', [])))"
+#       - name: Print vulnerability count
+#         run: |
+#           echo "Total results in SARIF:"
+#           python3 -c "import json; d=json.load(open('trivy-results.sarif')); print(len(d['runs'][0].get('results', [])))"
 
-      - name: Upload Trivy scan results to GitHub Security tab
-        uses: github/codeql-action/upload-sarif@v4
-        with:
-          sarif_file: 'trivy-results.sarif'
+#       - name: Upload Trivy scan results to GitHub Security tab
+#         uses: github/codeql-action/upload-sarif@v4
+#         with:
+#           sarif_file: 'trivy-results.sarif'
