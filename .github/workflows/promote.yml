@@ -1,0 +1,38 @@
+name: Promote Tested Image to Production Tag
+
+# Manually triggered once a test tag (e.g. v1.2.3-test1) has passed the
+# CRITICAL vulnerability gate in test-service.yml. Retags that exact,
+# already-scanned image digest as the production tag — no rebuild, no rescan.
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_tag:
+        description: 'Test tag that already passed the scan (e.g. v1.2.3-test1)'
+        required: true
+        type: string
+      target_tag:
+        description: 'Production tag to publish (e.g. v1.2.3)'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  promote:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Log in to GHCR
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+      - name: Retag scanned image as production release
+        run: |
+          IMAGE_NAME="trivy-sarif-test-app"
+          SOURCE="ghcr.io/${{ github.repository_owner }}/${IMAGE_NAME}:${{ inputs.source_tag }}"
+          TARGET="ghcr.io/${{ github.repository_owner }}/${IMAGE_NAME}:${{ inputs.target_tag }}"
+
+          echo "Promoting $SOURCE -> $TARGET (no rebuild, no rescan)"
+          docker buildx imagetools create --tag "$TARGET" "$SOURCE"
+          echo "Promoted: $TARGET"

@@ -7,7 +7,7 @@ permissions:
 on:
   push:
     tags:
-      - '*'
+      - '*-test*'   # Only test/candidate tags build+scan+push here; real release tags go through promote.yml
 
 jobs:
   build-and-push:
